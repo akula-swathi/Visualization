@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head><title>Graphical representation</title>
+<style>
+
+body {
+  font: 10px sans-serif;
+}
+
+.bar rect {
+  shape-rendering: crispEdges;
+}
+
+.bar text {
+  fill: #999999;
+}
+
+.axis path, .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.d3-tip {
+  line-height: 1;
+  font-weight: bold;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border-radius: 2px;
+}
+
+.d3-tip:after {
+  box-sizing: border-box;
+  display: inline;
+  font-size: 10px;
+  width: 100%;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.8);
+  content: "\25BC";
+  position: absolute;
+  text-align: center;
+}
+
+/* Style northward tooltips differently */
+.d3-tip.n:after {
+  margin: -1px 0 0 0;
+  top: 100%;
+  left: 0;
+}
+</style>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+<script src = "https://d3js.org/d3-scale.v4.min.js"></script>
+</head>
+<body>
+<center>
+<h1>Graphical representation of Student Average mark</h1>
+<div id="gn"></div>
+<div id="graph"></div>
+<button id="hist" onClick="histogram()" style="margin-right: 15px;">Histogram</button>
+<button id="bar" onClick="Bar()">Bar chart</button>
+<script>
+
+var margin = {top: 50, right: 20, bottom: 70, left: 40},
+    width = 600 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+
+function histogram(){
+document.getElementById("gn").innerHTML="<h1>Histogram</h1>";
+document.getElementById("hist").style.backgroundColor="light green";
+var gp=document.getElementById("graph");
+if (gp.hasChildNodes())
+gp.removeChild(gp.childNodes[0]);
+
+var svg = d3.select("body").select("#graph").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", 
+          "translate(" + margin.left + "," + margin.top + ")");
+
+var color = "steelblue";
+d3.csv("student_marks.csv",function(error, data) {
+var values=data.map(function(d){return parseInt(d.Average);});
+var formatCount = d3.format(",.0f");
+var max = d3.max(values);
+var min = d3.min(values);
+var x = d3.scale.linear()
+      .domain([min, max])
+      .range([0, width]);
+var data = d3.layout.histogram()
+    .bins(x.ticks(20))
+    (values);
+
+var yMax = d3.max(data, function(d){return d.length});
+var yMin = d3.min(data, function(d){return d.length});
+var colorScale = d3.scale.linear()
+            .domain([yMin, yMax])
+            .range([d3.rgb(color).brighter(), d3.rgb(color).darker()]);
+
+var y = d3.scale.linear()
+    .domain([0, yMax])
+    .range([height, 0]);
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom");
+
+var yAxis=d3.svg.axis()
+          .scale(y)
+          .orient("left");
+
+var tip = d3.tip()
+  .attr('class', 'd3-tip')
+  .offset([-10, 0])
+  .html(function(d) {
+    return "<strong>Frequency:</strong> <span style='color:red'>" + d.length;
+  })
+
+svg.call(tip);
+
+var bar = svg.selectAll(".bar")
+    .data(data)
+  .enter().append("g")
+    .attr("class", "bar")
+    .attr("transform", function(d) { return "translate(" + x(d.x) + "," + y(d.y) + ")"; });
+
+var colour="brown";
+
+bar.append("rect")
+    .attr("x", 1)
+    
+    .attr("width", (x(data[0].dx) - x(0)))
+    .attr("height", function(d) { return height - y(d.y); })
+    .attr("fill", function(d) { if(colour=="brown")
+                                  colour="steelblue";
+                                 else
+                                  colour="brown";
+                                return colour;})
+    .on("mouseover",tip.show)
+     .on("mouseout",tip.hide);
+svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(xAxis)
+    .append("text")
+        
+        .attr("transform","translate(" + (width / 2) + ",30 )")
+         .style("text-anchor", "middle")
+        .text("Average Mark");
+svg.append("g")
+    .attr("class", "y axis")
+    .call(yAxis)
+    .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 0 - margin.left)
+        .attr("x",0 - (height / 2))
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .text("Frequency");
+});
+}
+
+
+
+
+function Bar(){
+document.getElementById("gn").innerHTML="<h1>Bar chart</h1>";
+var gp=document.getElementById("graph");
+if (gp.hasChildNodes())
+gp.removeChild(gp.childNodes[0]);
+
+var svg = d3.select("body").select("#graph").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", 
+          "translate(" + margin.left + "," + margin.top + ")");
+
+var x = d3.scale.ordinal().rangeRoundBands([0, width], .05);
+var y = d3.scale.linear().range([height, 0]);
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom")
+    ;
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left")
+    .ticks(10);
+    
+var tip = d3.tip()
+  .attr('class', 'd3-tip')
+  .offset([-10, 0])
+  .html(function(d) {
+    return "<strong>Average Mark:</strong> <span style='color:red'>" + d.Average + "</span>";
+  })
+
+svg.call(tip);
+d3.csv("student_marks.csv", function(error, data) {
+     /*data.forEach(function(d) {
+        d.month = d.month;
+        d.value = d.temp;
+    });*/
+	
+  x.domain(data.map(function(d) { return d.name; }));
+  y.domain([0, d3.max(data, function(d) { /*console.log(d.temp);*/return d.Average; })]);
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis)
+    .append("text")
+        
+        .attr("transform","translate(" + (width / 2) + " ,35)")
+         .style("text-anchor", "middle")
+        .text("Student Name");
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+    .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 0 - margin.left)
+        .attr("x",0 - (height / 2))
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .text("Average Mark");
+
+  svg.selectAll("bar")
+      .data(data)
+    .enter().append("rect")
+      .style("fill", "steelblue")
+      .attr("x", function(d) { return x(d.name); })
+      .attr("width", x.rangeBand())
+      .attr("y", function(d) {return y(d.Average); })
+      .attr("height", function(d) { return height - y(d.Average); })
+      .on("mouseover",tip.show)
+      .on("mouseout",tip.hide);
+
+  });
+}
+
+
+
+</script>
+</center>
+</body>
